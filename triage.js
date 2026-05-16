@@ -55,7 +55,7 @@ const EMERGENCY_PATTERNS = [
   /\b(vomiting blood|throwing up blood|blood in vomit|coffee ground vomit|black stool|tarry stool|blood in stool|severe abdominal pain|appendicitis)\b/i,
   /\b(anaphylaxis|throat closing|throat swelling|can't swallow|tongue swelling|epipen|allergic reaction with breathing)\b/i,
   /\b(overdose|took too many|poisoned|drank bleach|swallowed chemical|entire bottle)\b/i,
-  /(suicid|kill myself|end my life|want to die|no reason to live|don't want to (be here|live|exist)|want to disappear|not want to be here|better off without me|everyone (would be|is|are|will be|would be) better (without me|off without me|off if i was gone)|burden to (everyone|you|my family|others)|thinking (about|of) (ending|taking) my (life|own life)|hurt myself|harm myself|homicid|kill someone|self.harm)/i,
+  /(suicid|kill (my|him|her|them)self|end (my|his|her|their|a) life|wants? to die|no reason to live|don't want to (be here|live|exist)|wants? to disappear|not want to be here|better off (without me|dead)|everyone (would be|is|are|will be|would be) better (without (me|him|her|them)|off without (me|him|her|them))|burden to (everyone|you|my|her|his|their|the) (family|others?|loved ones?)|thinking (about|of) (ending|taking) (my|his|her|their) (life|own life)|hurt (my|him|her|them)self|harm (my|him|her|them)self|homicid|kill someone|self.harm|wants? to (end it|give up on life|not be here)|feels? (like a burden|hopeless|worthless|like giving up))/i,
   /\b(water broke|in labor|heavy vaginal bleeding|pregnancy complication|ectopic|pregnant[^.!?]{0,40}bleeding)\b/i
 ];
 
@@ -280,16 +280,24 @@ function simulateAIClinicalInterpretation(text, entities, vitals) {
     aiFindings.push({ label: 'AI detected Maximum / Beyond-Scale Severity', level: 'danger' });
   }
 
-  // ── MENTAL HEALTH CRISIS: Semantic / paraphrased suicidal ideation
+  // ── MENTAL HEALTH CRISIS: Semantic / paraphrased / third-person suicidal ideation
   const mentalCrisisPatterns = [
+    // First-person
     /everyone (would be|is|will be|are|would) better (without me|off without me|off if i (was|were|am) gone)/i,
     /i (feel like|think|believe) (no ?one|nobody|everyone) (would|will|cares|needs me)/i,
-    /(don't|do not|dont) want to (be here|exist|live|be alive)/i,
+    /(don't|do not|dont) want to (be here|exist|live|be alive) (anymore|any more)?/i,
     /not want to be here (anymore|any more)/i,
     /life (isn't|is not|isnt) worth (living|it)/i,
     /what('s| is) the point (of living|of life|anymore)/i,
     /i('m| am) a burden/i,
-    /no one (would|will) (miss|care about|notice) me/i
+    /no one (would|will) (miss|care about|notice) me/i,
+    // Third-person (caregiver calling about patient)
+    /(patient|she|he|they) (says?|feels?|thinks?|told me) (she|he|they|it)? ?(wants? to disappear|wants? to die|feels? like a burden|doesn't want to live|is suicidal)/i,
+    /feels? like a burden to (her|his|their|the|my|our) (family|loved ones?|everyone)/i,
+    /(she|he|they) wants? to (disappear|give up|end it|not be here|die)/i,
+    /(talking about|mentioned|said) (not wanting to live|wanting to die|ending (her|his|their|my) life|suicide)/i,
+    /wants? to disappear/i,
+    /feels? (hopeless|worthless|like giving up|like a burden)/i
   ];
   if (mentalCrisisPatterns.some(p => p.test(text))) {
     aiRiskBoost = RISK.EMERGENCY;
@@ -305,7 +313,7 @@ function runTriage(fullText) {
 
   // A. Entity Extraction
   const entities = {
-    isMentalH: /(suicid|kill myself|end my life|want to die|no reason to live|don't want to (be here|live|exist)|want to disappear|not want to be here|better off without me|everyone (would be|is|are|will be|would be) better (without me|off without me)|burden to (everyone|you|my family|others)|thinking (about|of) (ending|taking) my (life|own life)|harm myself|homicid|kill someone|self.harm)/i.test(t),
+    isMentalH: /(suicid|kill (my|him|her|them)self|end (my|his|her|their|a) life|wants? to die|no reason to live|don't want to (be here|live|exist)|wants? to disappear|not want to be here|better off (without me|dead)|everyone (would be|is|are|will be|would be) better (without (me|him|her|them)|off without (me|him|her|them))|burden to (everyone|you|my|her|his|their|the) (family|others?|loved ones?)|thinking (about|of) (ending|taking) (my|his|her|their) (life|own life)|hurt (my|him|her|them)self|harm (my|him|her|them)self|homicid|kill someone|self.harm|wants? to (end it|give up on life|not be here)|feels? (like a burden|hopeless|worthless|like giving up))/i.test(t),
     isEmergencySymptom: matchAny(t, EMERGENCY_PATTERNS),
     isUrgentSymptom: matchAny(t, PHYSICIAN_PATTERNS),
     isCareBridgeSymptom: matchAny(t, CAREBRIDGE_PATTERNS),
@@ -494,7 +502,7 @@ async function submitMessage() {
 
   if (session.assessed && !session.activeQuestion) {
     session = { turns: [], askedQuestions: new Set(), activeQuestion: null, lastDisposition: null, assessed: false };
-    const div = document.createElement("div"); div.style = "text-align:center;margin:30px 0 20px;color:var(--text3);font-size:11px;text-transform:uppercase;font-weight:600;letter-spacing:1px;"; div.innerHTML = "— New Assessment Started —";
+    const div = document.createElement("div"); div.className = "session-divider"; div.textContent = "New Assessment";
     document.getElementById("chatMessages").appendChild(div);
   }
 
@@ -535,8 +543,18 @@ async function submitMessage() {
   const pillsHTML = result.triggers.map(t => `<span class="pill ${t.level}">${t.label}</span>`).join("");
   
   let actionHtml = "";
-  if (result.disposition === DISPOSITIONS.SELF_CARE) { actionHtml = `<div style="margin-top: 14px; padding: 12px; background: rgba(0,0,0,0.15); border: 1px solid var(--border); border-radius: 8px; font-weight: 500; font-size: 15px; color: var(--text);">💡 ${result.selfCareAction}</div>`; }
-  else if (d.action) { actionHtml = `<div style="margin-top: 14px; padding: 12px; background: rgba(0,0,0,0.15); border: 1px solid var(--border); border-radius: 8px; font-weight: 500; font-size: 15px; color: var(--text);">${d.action}</div>`; }
+  if (result.isMentalH) {
+    actionHtml = `<div style="margin-top:14px;padding:14px 16px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);border-radius:10px;">
+      <div style="font-weight:700;font-size:15px;color:#fca5a5;margin-bottom:6px;">🆘 Crisis Resources — Available 24/7</div>
+      <div style="font-size:14px;color:var(--text);margin-bottom:4px;"><strong>📞 988</strong> — Suicide & Crisis Lifeline (call or text)</div>
+      <div style="font-size:14px;color:var(--text);margin-bottom:4px;"><strong>📞 911</strong> — If you are in immediate danger</div>
+      <div style="font-size:14px;color:var(--text);">💬 <a href="https://988lifeline.org/chat/" target="_blank" style="color:#93c5fd;">Chat online at 988lifeline.org</a></div>
+    </div>`;
+  } else if (result.disposition === DISPOSITIONS.SELF_CARE) {
+    actionHtml = `<div style="margin-top:14px;padding:12px;background:rgba(0,0,0,0.15);border:1px solid var(--border);border-radius:8px;font-weight:500;font-size:15px;color:var(--text);">💡 ${result.selfCareAction}</div>`;
+  } else if (d.action) {
+    actionHtml = `<div style="margin-top:14px;padding:12px;background:rgba(0,0,0,0.15);border:1px solid var(--border);border-radius:8px;font-weight:500;font-size:15px;color:var(--text);">${d.action}</div>`;
+  }
 
   pipeBubble.innerHTML = `<div class="disposition-card ${d.cssClass}"><div class="disposition-header">${d.emoji} ${d.label}</div><div class="disposition-reason">${reasoning}</div>${actionHtml}<div class="finding-pills">${pillsHTML}</div><span class="confidence-badge ${result.confidenceStr}">${result.confidenceStr.charAt(0).toUpperCase() + result.confidenceStr.slice(1)} Confidence</span></div><div style="font-size:12px;color:var(--text3);margin-top:12px;">⚠ This output is for coordination support only — not a clinical diagnosis. Always escalate when in doubt.</div>`;
   pipeWrap.scrollIntoView({ behavior: "smooth", block: "end" });
