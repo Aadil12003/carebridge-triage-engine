@@ -52,3 +52,9 @@ The following edge cases were tested after adjustments to ensure proper routing:
   }
 ```
 This ensures that the triage engine evaluates a reasonably fresh context without letting outdated, unrelated complaints influence the current symptom assessment.
+
+## 5. Mental Health Evaluation Regex Adjustments
+
+**Finding:** The mental health regexes were brittle and failed to match variants like "wants to disappear" (due to 's'), or third-person phrasing like "burden to her family".
+
+**Fix:** Updated `isMentalH`, `EMERGENCY_PATTERNS`, and `mentalCrisisPatterns` to account for singular/plural variants ("wants?"), third-person pronouns ("her family", "his family", "their family"), and variants of "harm myself" ("harm herself", "harm himself", "harm themselves").

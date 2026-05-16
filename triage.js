@@ -55,7 +55,7 @@ const EMERGENCY_PATTERNS = [
   /\b(vomiting blood|throwing up blood|blood in vomit|coffee ground vomit|black stool|tarry stool|blood in stool|severe abdominal pain|appendicitis)\b/i,
   /\b(anaphylaxis|throat closing|throat swelling|can't swallow|tongue swelling|epipen|allergic reaction with breathing)\b/i,
   /\b(overdose|took too many|poisoned|drank bleach|swallowed chemical|entire bottle)\b/i,
-  /(suicid|kill myself|end my life|want to die|no reason to live|don't want to (be here|live|exist)|want to disappear|not want to be here|better off without me|everyone (would be|is|are|will be|would be) better (without me|off without me|off if i was gone)|burden to (everyone|you|my family|others)|thinking (about|of) (ending|taking) my (life|own life)|hurt myself|harm myself|homicid|kill someone|self.harm)/i,
+  /(suicid|kill myself|end my life|wants? to die|no reason to live|don't want to (be here|live|exist)|wants? to disappear|not want to be here|better off without me|everyone (would be|is|are|will be|would be) better (without me|off without me|off if (i was|they were) gone)|burden to (everyone|you|my family|her family|his family|their family|others)|thinking (about|of) (ending|taking) (my|her|his|their) (life|own life)|hurt myself|harm (myself|herself|himself|themselves)|homicid|kill someone|self.harm)/i,
   /\b(water broke|in labor|heavy vaginal bleeding|pregnancy complication|ectopic|pregnant[^.!?]{0,40}bleeding)\b/i
 ];
 
@@ -282,14 +282,14 @@ function simulateAIClinicalInterpretation(text, entities, vitals) {
 
   // ── MENTAL HEALTH CRISIS: Semantic / paraphrased suicidal ideation
   const mentalCrisisPatterns = [
-    /everyone (would be|is|will be|are|would) better (without me|off without me|off if i (was|were|am) gone)/i,
-    /i (feel like|think|believe) (no ?one|nobody|everyone) (would|will|cares|needs me)/i,
-    /(don't|do not|dont) want to (be here|exist|live|be alive)/i,
+    /everyone (would be|is|will be|are|would) better (without me|off without me|off if (i was|they were|i were|i am) gone)/i,
+    /(i|he|she|they) (feel like|feels like|think|thinks|believe|believes) (no ?one|nobody|everyone) (would|will|cares|needs (me|him|her|them))/i,
+    /(don't|do not|dont|doesn't|does not) want to (be here|exist|live|be alive)/i,
     /not want to be here (anymore|any more)/i,
     /life (isn't|is not|isnt) worth (living|it)/i,
     /what('s| is) the point (of living|of life|anymore)/i,
-    /i('m| am) a burden/i,
-    /no one (would|will) (miss|care about|notice) me/i
+    /(i('m| am)|(she's|she is)|(he's|he is)|(they're|they are)) a burden/i,
+    /no one (would|will) (miss|care about|notice) (me|him|her|them)/i
   ];
   if (mentalCrisisPatterns.some(p => p.test(text))) {
     aiRiskBoost = RISK.EMERGENCY;
@@ -305,7 +305,7 @@ function runTriage(fullText) {
 
   // A. Entity Extraction
   const entities = {
-    isMentalH: /(suicid|kill myself|end my life|want to die|no reason to live|don't want to (be here|live|exist)|want to disappear|not want to be here|better off without me|everyone (would be|is|are|will be|would be) better (without me|off without me)|burden to (everyone|you|my family|others)|thinking (about|of) (ending|taking) my (life|own life)|harm myself|homicid|kill someone|self.harm)/i.test(t),
+    isMentalH: /(suicid|kill myself|end my life|wants? to die|no reason to live|don't want to (be here|live|exist)|wants? to disappear|not want to be here|better off without me|everyone (would be|is|are|will be|would be) better (without me|off without me)|burden to (everyone|you|my family|her family|his family|their family|others)|thinking (about|of) (ending|taking) (my|her|his|their) (life|own life)|harm (myself|herself|himself|themselves)|homicid|kill someone|self.harm)/i.test(t),
     isEmergencySymptom: matchAny(t, EMERGENCY_PATTERNS),
     isUrgentSymptom: matchAny(t, PHYSICIAN_PATTERNS),
     isCareBridgeSymptom: matchAny(t, CAREBRIDGE_PATTERNS),
