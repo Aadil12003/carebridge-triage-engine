@@ -54,9 +54,9 @@ const EMERGENCY_PATTERNS = [
   /\b(sudden blindness|sudden vision loss|bloody vision|blood in vision|chemical in eye)\b/i,
   /\b(vomiting blood|throwing up blood|blood in vomit|coffee ground vomit|black stool|tarry stool|blood in stool|severe abdominal pain|appendicitis)\b/i,
   /\b(anaphylaxis|throat closing|throat swelling|can't swallow|tongue swelling|epipen|allergic reaction with breathing)\b/i,
-  /\b(overdose|took too many|poisoned|drank bleach|swallowed chemical)\b/i,
+  /\b(overdose|took too many|poisoned|drank bleach|swallowed chemical|entire bottle)\b/i,
   /(suicid|kill myself|end my life|want to die|no reason to live|don't want to (be here|live|exist)|want to disappear|not want to be here|better off without me|everyone (would be|is|are|will be|would be) better (without me|off without me|off if i was gone)|burden to (everyone|you|my family|others)|thinking (about|of) (ending|taking) my (life|own life)|hurt myself|harm myself|homicid|kill someone|self.harm)/i,
-  /\b(water broke|in labor|heavy vaginal bleeding|pregnancy complication|ectopic)\b/i
+  /\b(water broke|in labor|heavy vaginal bleeding|pregnancy complication|ectopic|pregnant[^.!?]{0,40}bleeding)\b/i
 ];
 
 const PHYSICIAN_PATTERNS = [
@@ -70,9 +70,9 @@ const PHYSICIAN_PATTERNS = [
   /\b(back pain|sciatica|joint pain|arthritis flare)\b/i,
   /\b(rash|hives|skin infection|cellulitis|abscess|boil|spider bite)\b/i,
   /\b(medication side effect|side effects|adjust medication|change medication|refill|prescription|medication change|running out of meds)\b/i,
-  /\b(chronic|persistent|ongoing).{0,30}(pain|rash|headache|symptom|cough)\b/i,
+  /\b(chronic|persistent|ongoing)[^.!?]{0,30}(pain|rash|headache|symptom|cough)\b/i,
   /\b(lab results|lab review|insulin adjustment|reassessment|recurrent)\b/i,
-  /\b(blood pressure high|blood sugar high|dizzy|lightheaded|vertigo)\b/i
+  /\b(blood pressure|blood pressure high|blood sugar high|dizzy|lightheaded|vertigo)\b/i
 ];
 
 const CAREBRIDGE_PATTERNS = [
@@ -226,6 +226,8 @@ function evaluateClusters(t, vEval, entities) {
   // Intracranial Bleed: fall + anticoagulants + confusion
   if (entities.hasFall && entities.hasAnticoagulant && entities.hasNeuro) {
     isEmergent = true; clusters.push({ label: 'Intracranial Bleed Risk', level: 'danger' });
+  } else if (entities.hasFall && entities.hasAnticoagulant) {
+    isEmergent = true; clusters.push({ label: 'Intracranial Bleed Risk (Fall on Anticoagulants)', level: 'danger' });
   }
 
   return { isEmergent, clusters };
@@ -273,7 +275,7 @@ function simulateAIClinicalInterpretation(text, entities, vitals) {
   }
 
   // ── MAXIMUM SEVERITY: Standalone "10" or beyond-scale ("20") after severity question
-  if (/\b(10|1[1-9]|[2-9]\d)\b$/.test(text.trim())) {
+  if (/\b(10|1[1-9]|[2-9]\d)\b$/.test(text.trim()) && !/\d{2,3}\s*\/\s*\d{2,3}$/.test(text.trim())) {
     aiRiskBoost = RISK.EMERGENCY;
     aiFindings.push({ label: 'AI detected Maximum / Beyond-Scale Severity', level: 'danger' });
   }
@@ -303,7 +305,7 @@ function runTriage(fullText) {
 
   // A. Entity Extraction
   const entities = {
-    isMentalH: /(suicid|kill myself|end my life|want to die|no reason to live|don't want to (be here|live|exist)|want to disappear|not want to be here|better off without me|everyone (would be|is|are|will be|would be) better (without me|off without me)|burden to (everyone|you|my family|others)|thinking (about|of) (ending|taking) my (life|own life)|hurt myself|harm myself|homicid|kill someone|self.harm)/i.test(t),
+    isMentalH: /(suicid|kill myself|end my life|want to die|no reason to live|don't want to (be here|live|exist)|want to disappear|not want to be here|better off without me|everyone (would be|is|are|will be|would be) better (without me|off without me)|burden to (everyone|you|my family|others)|thinking (about|of) (ending|taking) my (life|own life)|harm myself|homicid|kill someone|self.harm)/i.test(t),
     isEmergencySymptom: matchAny(t, EMERGENCY_PATTERNS),
     isUrgentSymptom: matchAny(t, PHYSICIAN_PATTERNS),
     isCareBridgeSymptom: matchAny(t, CAREBRIDGE_PATTERNS),
@@ -498,6 +500,9 @@ async function submitMessage() {
 
   if (session.activeQuestion) { session.askedQuestions.add(session.activeQuestion); session.activeQuestion = null; }
   session.turns.push(text);
+  if (session.turns.length > 10) {
+    session.turns.shift(); // Keep only the last 10 messages (sliding window)
+  }
   const fullText = session.turns.join(" ");
 
   const safeHTML = escapeHTML(text).replace(/\n/g, "<br>");
