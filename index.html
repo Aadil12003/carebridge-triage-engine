@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CareBridge — Triage Engine</title>
+<meta name="description" content="Clinical triage decision-support for CareBridge home-health coordination. Identifies dangerous symptoms, determines escalation urgency, and guides next steps."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <img src="https://images.squarespace-cdn.com/content/v1/66fd35be711e0241484649a9/2762e378-5cbc-4b2a-81a2-b3fb68415967/Logo.png" alt="Care Bridge Logo" style="height: 32px; object-fit: contain;">
+        <span class="brand-name" style="margin-left: 8px;">Care Bridge</span>
+        <span class="brand-tag">Triage</span>
+      </div>
+      <div class="header-disclaimer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Not a medical provider — for coordination support only
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Landing / Chat area -->
+    <div class="chat-container" id="chatContainer">
+      <div class="chat-messages" id="chatMessages">
+        <!-- Initial state -->
+        <div class="welcome-block" id="welcomeBlock">
+          <img src="https://images.squarespace-cdn.com/content/v1/66fd35be711e0241484649a9/2762e378-5cbc-4b2a-81a2-b3fb68415967/Logo.png" alt="Care Bridge" style="height: 64px; margin-bottom: 24px;">
+          <h1 class="welcome-title">Care Bridge Triage</h1>
+          <p class="welcome-sub">Describe the patient's symptoms, vitals, or the situation — I'll assess urgency, ask targeted follow-up questions, and recommend a disposition.</p>
+          <div class="disclaimer-box">
+            <strong>⚠ Important:</strong> This tool is for home-health and intake coordination support only. It does not diagnose, prescribe, or replace clinical judgment. In any life-threatening emergency, <strong>call 911 immediately</strong>.
+          </div>
+          <div class="quick-scenarios">
+            <p class="quick-label">Try a scenario:</p>
+            <div class="quick-grid">
+              <button class="quick-btn" onclick="useScenario(this)" data-text="65-year-old male, sudden onset chest tightness, sweating, jaw pain. Started 20 minutes ago. On aspirin and metformin.">Chest pain, jaw pain, sweating</button>
+              <button class="quick-btn" onclick="useScenario(this)" data-text="Mother calling about her 2-year-old. Fever of 104°F for 2 days, not eating, very sleepy, won't wake up easily.">Toddler high fever, lethargic</button>
+              <button class="quick-btn" onclick="useScenario(this)" data-text="Patient says she wants to disappear. Feels like a burden to her family. Lives alone, no support.">Possible mental health crisis</button>
+              <button class="quick-btn" onclick="useScenario(this)" data-text="32-week pregnant, severe headache, blurry vision, and swelling in hands and feet since this morning.">Pregnant — headache, vision changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="input-area">
+        <div class="input-row">
+          <textarea id="userInput" class="chat-input" placeholder="Describe your symptoms (e.g., 'I have a minor cut')..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          <button id="micBtn" class="mic-btn" aria-label="Use voice input">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="22"></line>
+            </svg>
+          </button>
+          <button class="send-btn" id="sendBtn" onclick="submitMessage()" aria-label="Send">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div class="input-footer">
+          <span>Press <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for new line</span>
+          <button class="reset-btn" onclick="resetSession()" id="resetBtn" style="display:none">↺ New Assessment</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="triage.js"></script>
+</body>
+</html>
